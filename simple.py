@@ -3,6 +3,7 @@ import pandas as pd
 import altair as alt
 import numpy as np
 import plotly.graph_objects as go
+from streamlit_extras.metric_cards import style_metric_cards
 
 
 COUNTRY_COLORS = {
@@ -14,8 +15,9 @@ COUNTRY_COLORS = {
 
 
 APP_TITLE = 'UK Young Adults Demographics: A Decade in Data '
-APP_SUB_TITLE = 'Source: The National Archives under [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)'
+APP_SUB_TITLE = ''
 st.set_page_config(page_title=APP_TITLE, layout="wide")
+st.write("#")
 st.title(APP_TITLE)
 st.caption(APP_SUB_TITLE)
 
@@ -327,63 +329,17 @@ def plot_animated_population_by_sex(df):
     return fig
 
 @st.cache_data
-def make_donut(input_response, input_text, input_color):
-  if input_color == 'blue':
-      chart_color = ['#29b5e8', '#155F7A']
-  if input_color == 'green':
-      chart_color = ['#27AE60', '#12783D']
-  if input_color == 'orange':
-      chart_color = ['#F39C12', '#875A12']
-  if input_color == 'red':
-      chart_color = ['#E74C3C', '#781F16']
-    
-  source = pd.DataFrame({
-      "Topic": ['', input_text],
-      "% value": [100-input_response, input_response]
-  })
-  source_bg = pd.DataFrame({
-      "Topic": ['', input_text],
-      "% value": [100, 0]
-  })
-    
-  plot = alt.Chart(source).mark_arc(innerRadius=45, cornerRadius=25).encode(
-      theta="% value",
-      color= alt.Color("Topic:N",
-                      scale=alt.Scale(
-                          #domain=['A', 'B'],
-                          domain=[input_text, ''],
-                          # range=['#29b5e8', '#155F7A']),  # 31333F
-                          range=chart_color),
-                      legend=None),
-  ).properties(width=130, height=130)
-    
-  text = plot.mark_text(align='center', color="#29b5e8", font="Lato", fontSize=32, fontWeight=700, fontStyle="italic").encode(text=alt.value(f'{input_response} %'))
-  plot_bg = alt.Chart(source_bg).mark_arc(innerRadius=45, cornerRadius=20).encode(
-      theta="% value",
-      color= alt.Color("Topic:N",
-                      scale=alt.Scale(
-                          # domain=['A', 'B'],
-                          domain=[input_text, ''],
-                          range=chart_color),  # 31333F
-                      legend=None),
-  ).properties(width=130, height=130)
-  text = plot.mark_text(align='center', color="#29b5e8", font="Lato", fontSize=32, fontWeight=700, fontStyle="italic").encode(text=alt.value(f'{input_response} %'))
-  plot_bg = alt.Chart(source_bg).mark_arc(innerRadius=45, cornerRadius=20).encode(
-      theta="% value",
-      color= alt.Color("Topic:N",
-                      scale=alt.Scale(
-                          # domain=['A', 'B'],
-                          domain=[input_text, ''],
-                          range=chart_color),  # 31333F
-                      legend=None),
-  ).properties(width=130, height=130)
-  return plot_bg + plot + text
+def calculate_population_change(df):
+    df_2011, df_2022 = df[df['Year'] == 2011], df[df['Year'] == 2022]
+    pop_2011, pop_2022 = df_2011.groupby('name')['Population'].sum().reset_index()['Population'].sum(), df_2022.groupby('name')['Population'].sum().reset_index()['Population'].sum()
+    delta = (pop_2022 - pop_2011) / pop_2011 * 100
+    return pop_2022, delta
 
 
 pie_df = pd.read_csv('/Users/jts/Documents/college/git-hub/dv-streamlit/test_pie.csv')
 
 
-col = st.columns((5, 5, 1.9), gap='medium')
+col = st.columns((3.5, 5, 1.9), gap='medium')
 with col[0]:
     st.plotly_chart(plot_animated_population_pie_chart(pie_df), use_container_width=True)
 
@@ -391,11 +347,6 @@ with col[1]:
     st.plotly_chart(plot_animated_population_by_sex(pie_df), use_container_width=True)
     #st.plotly_chart(plot_population_by_sex(pie_df), use_container_width=True)
 
-
-"""def main():
-    st.set_page_config(APP_TITLE)
-    st.title(APP_TITLE)
-    st.caption(APP_SUB_TITLE)"""
 
 @st.cache_data
 def calculate_sex_ratio(df):
@@ -411,32 +362,40 @@ def calculate_sex_ratio(df):
 
     # Calculate sex ratio
     merged['Sex Ratio'] = (merged['Population_male'] / merged['Population_female']).round(2)
+    ratio_2011 = merged.loc[merged['Year'] == 2011, 'Sex Ratio'].values[0]
+    ratio_2022 = merged.loc[merged['Year'] == 2022, 'Sex Ratio'].values[0]
+    delta = ratio_2022 - ratio_2011
+    return ratio_2022, delta
 
-    # Convert to dictionary for each year
-    sex_ratio_by_year = {}
-    for year, data in merged.groupby('Year'):
-        fm = data['Sex Ratio'].to_list()[0]
-        diff = 2.-fm if 1.-fm <0 else 1.-fm + 1
-        c = 'red' if diff <= 1. else 'green'
-        st.markdown(f"<p style='text-align: center; color: {c};'>{diff:.2f}:{fm}</p>",
-            unsafe_allow_html=True)
-        sex_ratio_by_year[year] = f"{diff:.2f}:{fm}"
+@st.cache_data
+def metrics():
+        col1 = st.columns(1)[0]
+        pop, d_pop = calculate_population_change(pie_df)
+        d_pop = round(d_pop, 2)
+        col1.metric(label="Population", value="{:,}".format(pop), delta=f'{d_pop}%')
 
 
-    return sex_ratio_by_year
-
+        col2 = st.columns(1)[0]
+        sex_ratio, sex_del = calculate_sex_ratio(pie_df)
+        sex_del = round(sex_del, 2)
+        col2.metric(label="Male/Female Ratio", value=sex_ratio, delta=sex_del)
+        style_metric_cards(border_left_color="#8C83D1") #0074D9
 
 
 with col[2]:
-    donut_chart_greater = make_donut(4.4, 'Inbound', 'green')
-    st.write('**Population change**')
-    st.altair_chart(donut_chart_greater)
-    st.write(calculate_sex_ratio(pie_df))
+    #donut_chart_greater = make_donut(4.4, 'Inbound', 'green')
+    #st.write('**Population change**')
+    #st.altair_chart(donut_chart_greater)
+    #st.write(calculate_sex_ratio(pie_df))
+
+    metrics()
+
+
     with st.expander('About', expanded=True):
         st.write('''
-            - Data: [U.S. Census Bureau](https://www.census.gov/data/datasets/time-series/demo/popest/2010s-state-total.html).
-            - :orange[**Gains/Losses**]: states with high inbound/ outbound migration for selected year
-            - :orange[**States Migration**]: percentage of states with annual inbound/ outbound migration > 50,000
+            - **Data**: The National Archives under [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
+            - **Population**: Total Population of the targeted age group in 2022.
+            - **Male/Female Ratio**: Ratio of males to females in the targeted age group.
             ''')
 
 
@@ -498,3 +457,5 @@ else:
     )
 
 chart_placeholder.altair_chart(chart1, use_container_width=True)
+
+st.write(pie_df)
