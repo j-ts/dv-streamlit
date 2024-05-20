@@ -48,56 +48,6 @@ df = load_data()
 # Title
 # st.title("UK Population Density Dashboard")
 
-# User selection for year and gender beside each other
-col1, col2 = st.columns(2)
-with col1:
-    year = st.radio("Select Year", options=[2011, 2022])
-with col2:
-    male_selected = st.checkbox("Male", value=True)
-    female_selected = st.checkbox("Female", value=True)
-
-# Placeholder for the chart
-title_placeholder = st.empty()
-chart_placeholder = st.empty()
-
-age_range = st.slider("Select Age", 18, 35, 18)
-
-# Determine selected genders
-selected_genders = []
-if male_selected:
-    selected_genders.append('Male')
-if female_selected:
-    selected_genders.append('Female')
-
-# Filter data based on user selection
-filtered_data = df[
-    (df['Year'] == year) & 
-    (df['Gender'].isin(selected_genders)) &
-    (df['Age'] == age_range)
-]
-
-# Plot population density by location
-title_placeholder.subheader("Population Density by Geographic Location")
-
-# Check if any gender is selected to separate bars by gender
-if selected_genders:
-    chart1 = alt.Chart(filtered_data).mark_bar().encode(
-        x='Location',
-        y='Population Density',
-        color='Gender'
-    )
-else:
-    selected_genders = ['Male', 'Female']
-    filtered_data = df[(df['Year'] == year) & (df['Gender'].isin(selected_genders)) & (df['Age'] == age_range)]
-
-    # If no gender is selected, show full chart
-    chart1 = alt.Chart(filtered_data).mark_bar().encode(
-        x='Location',
-        y='Population Density',
-        color='Gender'
-    )
-
-chart_placeholder.altair_chart(chart1, use_container_width=True)
 
 @st.cache_data
 def plot_animated_population_pie_chart(df):
@@ -169,7 +119,8 @@ def plot_animated_population_pie_chart(df):
         }]
     )
     st.subheader('Population Dynamics by Country')
-    fig.update_layout(showlegend=True)
+    fig.update_layout(showlegend=True,
+        legend=dict(title='', traceorder='normal', orientation='h'))
 
     #fig.show()
     return fig
@@ -239,10 +190,11 @@ def plot_population_by_sex(df):
 def plot_animated_population_by_sex(df):
     # Aggregate the population by country, sex, and year
     df_grouped = df.groupby(['Year', 'name', 'sex'])['Population'].sum().reset_index()
-    total_population = df_grouped.groupby('name')['Population'].transform('sum')
-    # Normalize the population values so that M + F = 100% for each county
-    df_grouped['Population'] = (df_grouped['Population'] / total_population) * 100
     
+    total_population = df_grouped.groupby(['Year', 'name'])['Population'].transform('sum')
+    # Normalize the population values so that M + F = 100% for each county
+    
+    df_grouped['Population'] = (df_grouped['Population'] / total_population) * 100
     
     # Get unique years
     years = df_grouped['Year'].unique()
@@ -374,15 +326,68 @@ def plot_animated_population_by_sex(df):
 
     return fig
 
+@st.cache_data
+def make_donut(input_response, input_text, input_color):
+  if input_color == 'blue':
+      chart_color = ['#29b5e8', '#155F7A']
+  if input_color == 'green':
+      chart_color = ['#27AE60', '#12783D']
+  if input_color == 'orange':
+      chart_color = ['#F39C12', '#875A12']
+  if input_color == 'red':
+      chart_color = ['#E74C3C', '#781F16']
+    
+  source = pd.DataFrame({
+      "Topic": ['', input_text],
+      "% value": [100-input_response, input_response]
+  })
+  source_bg = pd.DataFrame({
+      "Topic": ['', input_text],
+      "% value": [100, 0]
+  })
+    
+  plot = alt.Chart(source).mark_arc(innerRadius=45, cornerRadius=25).encode(
+      theta="% value",
+      color= alt.Color("Topic:N",
+                      scale=alt.Scale(
+                          #domain=['A', 'B'],
+                          domain=[input_text, ''],
+                          # range=['#29b5e8', '#155F7A']),  # 31333F
+                          range=chart_color),
+                      legend=None),
+  ).properties(width=130, height=130)
+    
+  text = plot.mark_text(align='center', color="#29b5e8", font="Lato", fontSize=32, fontWeight=700, fontStyle="italic").encode(text=alt.value(f'{input_response} %'))
+  plot_bg = alt.Chart(source_bg).mark_arc(innerRadius=45, cornerRadius=20).encode(
+      theta="% value",
+      color= alt.Color("Topic:N",
+                      scale=alt.Scale(
+                          # domain=['A', 'B'],
+                          domain=[input_text, ''],
+                          range=chart_color),  # 31333F
+                      legend=None),
+  ).properties(width=130, height=130)
+  text = plot.mark_text(align='center', color="#29b5e8", font="Lato", fontSize=32, fontWeight=700, fontStyle="italic").encode(text=alt.value(f'{input_response} %'))
+  plot_bg = alt.Chart(source_bg).mark_arc(innerRadius=45, cornerRadius=20).encode(
+      theta="% value",
+      color= alt.Color("Topic:N",
+                      scale=alt.Scale(
+                          # domain=['A', 'B'],
+                          domain=[input_text, ''],
+                          range=chart_color),  # 31333F
+                      legend=None),
+  ).properties(width=130, height=130)
+  return plot_bg + plot + text
+
 
 pie_df = pd.read_csv('/Users/jts/Documents/college/git-hub/dv-streamlit/test_pie.csv')
 
 
-col7, col8 = st.columns(2)
-with col8:
+col = st.columns((5, 5, 1.9), gap='medium')
+with col[0]:
     st.plotly_chart(plot_animated_population_pie_chart(pie_df), use_container_width=True)
 
-with col7:
+with col[1]:
     st.plotly_chart(plot_animated_population_by_sex(pie_df), use_container_width=True)
     #st.plotly_chart(plot_population_by_sex(pie_df), use_container_width=True)
 
@@ -391,3 +396,105 @@ with col7:
     st.set_page_config(APP_TITLE)
     st.title(APP_TITLE)
     st.caption(APP_SUB_TITLE)"""
+
+@st.cache_data
+def calculate_sex_ratio(df):
+    # Group by year and sex, then sum the Population
+    grouped = df.groupby(['Year', 'sex'])['Population'].sum().reset_index()
+
+    # Separate the data for males and females
+    males = grouped[grouped['sex'] == 'M']
+    females = grouped[grouped['sex'] == 'F']
+
+    # Merge male and female populations based on year
+    merged = pd.merge(males, females, on='Year', suffixes=('_male', '_female'))
+
+    # Calculate sex ratio
+    merged['Sex Ratio'] = (merged['Population_male'] / merged['Population_female']).round(2)
+
+    # Convert to dictionary for each year
+    sex_ratio_by_year = {}
+    for year, data in merged.groupby('Year'):
+        fm = data['Sex Ratio'].to_list()[0]
+        diff = 2.-fm if 1.-fm <0 else 1.-fm + 1
+        c = 'red' if diff <= 1. else 'green'
+        st.markdown(f"<p style='text-align: center; color: {c};'>{diff:.2f}:{fm}</p>",
+            unsafe_allow_html=True)
+        sex_ratio_by_year[year] = f"{diff:.2f}:{fm}"
+
+
+    return sex_ratio_by_year
+
+
+
+with col[2]:
+    donut_chart_greater = make_donut(4.4, 'Inbound', 'green')
+    st.write('**Population change**')
+    st.altair_chart(donut_chart_greater)
+    st.write(calculate_sex_ratio(pie_df))
+    with st.expander('About', expanded=True):
+        st.write('''
+            - Data: [U.S. Census Bureau](https://www.census.gov/data/datasets/time-series/demo/popest/2010s-state-total.html).
+            - :orange[**Gains/Losses**]: states with high inbound/ outbound migration for selected year
+            - :orange[**States Migration**]: percentage of states with annual inbound/ outbound migration > 50,000
+            ''')
+
+
+
+
+
+st.markdown("<h2> </h2>", unsafe_allow_html=True)
+
+st.markdown("<h2 style='text-align: center; color: black;'>Population Density by Geographic Location</h2>",
+    unsafe_allow_html=True)
+
+# User selection for year and gender beside each other
+col1, col2 = st.columns(2)
+with col1:
+    year = st.radio("Select Year", options=[2011, 2022])
+with col2:
+    male_selected = st.checkbox("Male", value=True)
+    female_selected = st.checkbox("Female", value=True)
+
+# Placeholder for the chart
+#title_placeholder = st.empty()
+chart_placeholder = st.empty()
+
+age_range = st.slider("Select Age", 18, 35, 18)
+
+# Determine selected genders
+selected_genders = []
+if male_selected:
+    selected_genders.append('Male')
+if female_selected:
+    selected_genders.append('Female')
+
+# Filter data based on user selection
+filtered_data = df[
+    (df['Year'] == year) & 
+    (df['Gender'].isin(selected_genders)) &
+    (df['Age'] == age_range)
+]
+
+# Plot population density by location
+#title_placeholder.subheader("Population Density by Geographic Location")
+
+# Check if any gender is selected to separate bars by gender
+if selected_genders:
+    chart1 = alt.Chart(filtered_data).mark_bar().encode(
+        x='Location',
+        y='Population Density',
+        color='Gender'
+    )
+else:
+    selected_genders = ['Male', 'Female']
+    filtered_data = df[(df['Year'] == year) & (df['Gender'].isin(selected_genders)) & (df['Age'] == age_range)]
+
+    # If no gender is selected, show full chart
+    chart1 = alt.Chart(filtered_data).mark_bar().encode(
+        x='Location',
+        y='Population Density',
+        color='Gender'
+    )
+
+chart_placeholder.altair_chart(chart1, use_container_width=True)
