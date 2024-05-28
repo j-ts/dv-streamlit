@@ -18,11 +18,19 @@ APP_TITLE = 'UK Young Adults Demographics: A Decade in Data '
 APP_SUB_TITLE = ''
 st.set_page_config(page_title=APP_TITLE, layout="wide")
 st.write("#")
+
+# First SCREEN
+
 st.title(APP_TITLE)
 st.caption(APP_SUB_TITLE)
-
 st.markdown('This code will be printed.')
 st.divider()
+st.image('jonny-unsplash.png', caption='Photo by Jonny Gios on Unsplash.',
+            use_column_width="always")
+
+# Second SCREEN
+st.markdown("<h2> </h2><h2> </h2><h2>Basic charts</h2><h2> </h2><h2> </h2>", unsafe_allow_html=True)
+
 
 # Load synthetic data
 @st.cache_data
@@ -382,9 +390,10 @@ def metrics():
         style_metric_cards(border_left_color="#8C83D1") #0074D9
 
 
+
 with col[2]:
     #donut_chart_greater = make_donut(4.4, 'Inbound', 'green')
-    #st.write('**Population change**')
+    st.subheader('Metrics')
     #st.altair_chart(donut_chart_greater)
     #st.write(calculate_sex_ratio(pie_df))
 
@@ -400,9 +409,10 @@ with col[2]:
 
 
 
+# Third SCREEN
 
 
-st.markdown("<h2> </h2>", unsafe_allow_html=True)
+st.markdown("<h2> </h2><h2> </h2><h2> </h2><h2> </h2>", unsafe_allow_html=True)
 
 st.markdown("<h2 style='text-align: center; color: black;'>Population Density by Geographic Location</h2>",
     unsafe_allow_html=True)
@@ -459,3 +469,6 @@ else:
 chart_placeholder.altair_chart(chart1, use_container_width=True)
 
 st.write(pie_df)
+
+
+st.divider()

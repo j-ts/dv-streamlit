@@ -1,0 +1,4 @@
+[server]
+maxMessageSize = 1024
+[theme]
+backgroundColor="#FAF9F6"
