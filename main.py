@@ -178,10 +178,7 @@ def plot_animated_population_pie_chart(df):
     fig.update_layout(showlegend=True,
                       legend=dict(title='', traceorder='normal', orientation='h'),
                       margin=dict(t=0, b=0, r=100),  #height=400
-                      plot_bgcolor='white',
                       )
-
-    #fig.show()
     return fig
 
 
@@ -324,7 +321,6 @@ def plot_animated_population_by_sex(df):
         showlegend=False,
         margin=dict(t=0, b=0), height=260,
         #legend=dict(title='', traceorder='normal', orientation='v'),
-        plot_bgcolor='white',
 
     )
     return fig
@@ -440,8 +436,6 @@ pie_df, gdf_choro = load_data()
 # 3 main visualizations
 __, Total_delta = calculate_population_change(pie_df)
 
-#st.markdown("<h2> </h2>", unsafe_allow_html=True)  # gap
-
 col, col1, col2 = st.columns([0.7, 1, 1], gap='large')
 # Dropdown to select country
 countries = gdf_choro['area_name'].unique()
@@ -461,10 +455,11 @@ with col:
     metric_place.metric(label=f'{selected_country} in 2022', value=f"{pop_2022:,}",
                         delta=f"{int(pop_2022 - pop_2011):,}")
 
+# Pie: Population Dynamics
 with col1:
     st.subheader('Population Dynamics')
     st.plotly_chart(plot_animated_population_pie_chart(pie_df), use_container_width=True)
-
+# Line: Age Distribution
 with col2:
     st.subheader('Age Distribution')
     colors = {2011: COUNTRY_COLORS['NORTHERN IRELAND'][-1], 2022: COUNTRY_COLORS['SCOTLAND'][-1]}
@@ -475,7 +470,7 @@ with col2:
     min_population = min(data_2011['population'].min(), data_2022['population'].min())
     max_population = max(data_2011['population'].max(), data_2022['population'].max())
 
-    # Create initial figure with data from 2011
+    # Create initial figure
     fig = go.Figure()
 
     hov_temp = 'Age: %{x}<br>Population: %{y}<extra></extra>'
@@ -489,21 +484,19 @@ with col2:
                              mode='lines+markers', name='2022', visible=True, line=dict(color=colors[2022]),
                              hovertemplate='2022<br>' + hov_temp))
 
-    # Define buttons for switching between years
-
-    # Update layout with buttons
+    # Update layout
     fig.update_layout(
         xaxis_title="Age",
         yaxis=dict(
             title='Total Population',
-            range=[min_population - 20000, max_population + 30000],
-        ),
+            range=[min_population - 20000, max_population + 30000],),
+        legend=dict(yanchor="bottom", xanchor="left", orientation='v', x=-0.1, y=-9),
         margin={"r": 10, "t": 0, "l": 0, "b": 0},
-        #height=400,
     )
     st.plotly_chart(fig, use_container_width=True)
 
 col = st.columns((0.5, 1,), gap='small')
+# Gender Gaps
 with col[0]:
     st.subheader('The Biggest Gender Gaps by Age')
     gender_gap_df = gender_gap(pie_df)
@@ -525,6 +518,7 @@ with col[0]:
                 - **Population**: Total population of the targeted age group in 2022.
                 - **Human sex ratio**: Ratio of males to females in the targeted age group.
                 ''')
+# Bar: Sex Distribution
 with col[1]:
     st.subheader('Sex Distribution')
     config = {'modeBarButtonsToRemove': ['toImage', 'sendDataToCloud', "zoom", "select",
