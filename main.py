@@ -540,7 +540,7 @@ col1, col2 = st.columns([1, 5])
 with col1:
     st.subheader("Filters")
     year = st.selectbox("Select year", [2011, 2022])
-    gender = st.selectbox("Select Gender", ["Both", "Male", "Female"])
+    gender = st.selectbox("Select Sex", ["Both", "Male", "Female"])
     # age
     if 'age' not in st.session_state:
         st.session_state['age'] = None
