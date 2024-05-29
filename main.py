@@ -20,7 +20,7 @@ COUNTRY_COLORS = {
 APP_TITLE = 'UK Young Adults Demographics: A Decade in Data '
 APP_SUB_TITLE = ''
 st.set_page_config(page_title=APP_TITLE, layout="wide", initial_sidebar_state="collapsed")
-st.write("#")
+st.write("#") # fix jumping bug
 st.markdown("""
         <style>
                .block-container {
@@ -92,12 +92,9 @@ def load_data():
     new_df_copy = pie_df.copy()
     new_df_copy.rename(columns={'year': 'year', 'population': 'population'}, inplace=True)
     result_df = process_population_data(new_df_copy)
-
-    #st.write(result_df.columns)
     # load gjson
     with open(gh_folder + "data-simplified.json", "r") as f:
         gdf = gpd.read_file(f)
-
     concatenated_df = pd.concat([gdf, result_df], axis=1)
     concatenated_df = concatenated_df.loc[:, ~concatenated_df.columns.duplicated()].copy()
 
@@ -184,71 +181,6 @@ def plot_animated_population_pie_chart(df):
                       plot_bgcolor='white',
                       )
 
-    #fig.show()
-    return fig
-
-
-@st.cache_data
-def plot_population_by_sex(df):
-    # Group by name and sex, then sum the population
-    grouped = df.groupby(['name', 'sex'])['population'].sum().reset_index()
-    # Calculate the total population for each county
-    total_population = grouped.groupby('name')['population'].transform('sum')
-    # Normalize the population values so that M + F = 100% for each county
-    grouped['population'] = (grouped['population'] / total_population) * 100
-
-    # Separate the data for males and females
-    males = grouped[grouped['sex'] == 'M']
-    females = grouped[grouped['sex'] == 'F']
-
-    fig = go.Figure()
-    # Add male bars
-    for i, row in males.iterrows():
-        country_name = row['name']
-        sex = 'Male'
-        color = COUNTRY_COLORS[country_name][4]
-        text_color = 'gray' if country_name == 'WALES' else 'white'
-        fig.add_trace(go.Bar(
-            x=[row['population']],
-            y=[row['name']],
-            name=f'{sex} – {country_name}',
-            orientation='h',
-            marker=dict(color=color),
-            hoverinfo='text',
-            width=0.7,
-            hovertext=f'{country_name}<br>{sex}: {row["population"]:.1f}%',
-            showlegend=False,
-            #text=f'{sex}: {row["population"]:.1f}% of {country_name}'
-        ))
-
-    # Add female bars
-    for i, row in females.iterrows():
-        country_name = row['name']
-        sex = 'Female'
-        color = COUNTRY_COLORS[country_name][8]
-        text_color = 'gray' if country_name == 'WALES' else 'gray'
-        fig.add_trace(go.Bar(
-            x=[row['population']],
-            y=[row['name']],
-            width=0.7,
-            name=f'{sex} – {country_name}',
-            orientation='h',
-            marker=dict(color=color),
-            hoverinfo='text',
-            hovertext=f'{country_name}<br>{sex}: {row["population"]:.1f}%',
-            hoverlabel={"bgcolor": 'white'},
-            showlegend=False,
-        ))
-    # Set the title and labels
-    fig.update_layout(
-        #title='Normalized Population by Sex in 2011',
-        xaxis_title='Population (%)',
-        yaxis_title='',
-        #barmode='stack',
-        showlegend=False,
-        margin=dict(t=0, b=0), height=200,
-        #legend=dict(title='', traceorder='normal', orientation='v'),
-    )
     #fig.show()
     return fig
 
@@ -486,9 +418,11 @@ st.markdown(f"<h1 style='text-align: center; color: black;'>{APP_TITLE}</h2>",
 
 st.caption(APP_SUB_TITLE)
 
+st.markdown('<p style="text-align: center;">Explore interactive charts  to uncover trends and insights about young adult population in the UK '
+            'between 2011 and 2022.</p>', unsafe_allow_html=True)
 __, __, col5, __, __ = st.columns(5)
+
 with col5:
-    st.markdown('This code will be printed.')
     # Button to scroll to the "Basic charts" section
     st.button("Explore the dashboard", on_click=scroll_to_basic_charts, type="primary")
 
@@ -564,8 +498,6 @@ with col2:
             title='Total Population',
             range=[min_population - 20000, max_population + 30000],
         ),
-        #paper_bgcolor='rgba(0, 0, 0, 0)',
-        plot_bgcolor='white',
         margin={"r": 10, "t": 0, "l": 0, "b": 0},
         #height=400,
     )
@@ -696,4 +628,4 @@ st.write(f"""
     * In 2022, the highest populations are in the 28-35 age range.
     * In 2011, the population had spikes every 3 years between 20 and 29 age range.
     """)
-add_vertical_space(10)
+add_vertical_space(5)
