@@ -86,7 +86,7 @@ def process_population_data(df):
 
 @st.cache_data
 def load_data():
-    gh_folder = '/Users/jts/Documents/college/git-hub/dv-streamlit/'
+    gh_folder = ''
     pie_df = pd.read_csv(gh_folder + 'pie_data.csv')
     # prepare data for map
     new_df_copy = pie_df.copy()
