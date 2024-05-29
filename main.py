@@ -58,7 +58,7 @@ st.image('jonny-unsplash.png', caption='Photo by Jonny Gios on Unsplash.',
             use_column_width="always")
 
 # Second SCREEN
-st.markdown("<h2> </h2><h2> </h2><h2>Basic charts</h2>", unsafe_allow_html=True)
+st.markdown("<h2> </h2><h2> </h2><h2 style='text-align: center;'>Basic charts</h2>", unsafe_allow_html=True)
 
 
 
@@ -175,7 +175,7 @@ def plot_animated_population_pie_chart(df):
             'xanchor': 'left',
             'currentvalue': {
                 'font': {'size': 20},
-                'prefix': 'year:',
+                #'prefix': 'Year: ',
                 'visible': True,
                 'xanchor': 'right'
             },
@@ -227,6 +227,7 @@ def plot_population_by_sex(df):
             hoverinfo='text',
             width=0.7,
             hovertext=f'{country_name}<br>{sex}: {row["population"]:.1f}%',
+            showlegend=False,
             #text=f'{sex}: {row["population"]:.1f}% of {country_name}'
         ))
 
@@ -246,16 +247,18 @@ def plot_population_by_sex(df):
             marker=dict(color=color),
             hoverinfo='text',
             hovertext=f'{country_name}<br>{sex}: {row["population"]:.1f}%',
-            hoverlabel={"bgcolor":'white'}
+            hoverlabel={"bgcolor":'white'},
+            showlegend=False,
         ))
-    st.subheader('Sex Distribution')
     # Set the title and labels
     fig.update_layout(
         #title='Normalized Population by Sex in 2011',
         xaxis_title='Population (%)',
         yaxis_title='',
         #barmode='stack',
-        legend=dict(title='', traceorder='normal', orientation='v'),)
+        showlegend=False,
+        #legend=dict(title='', traceorder='normal', orientation='v'),
+        )
     #fig.show()
     return fig
 
@@ -373,7 +376,7 @@ def plot_animated_population_by_sex(df):
             'xanchor': 'left',
             'currentvalue': {
                 'font': {'size': 20},
-                'prefix': 'year:',
+                #'prefix': 'Year: ',
                 'visible': True,
                 'xanchor': 'right'
             },
@@ -389,12 +392,11 @@ def plot_animated_population_by_sex(df):
             } for year in years]
         }]
     )
-    st.subheader('Sex Distribution')
     fig.update_layout(
         xaxis_title='Population (%)',
         yaxis_title='',
         legend=dict(title='', traceorder='normal', orientation='v'),
-        showlegend=True
+        showlegend=False
     )
 
     return fig
@@ -411,7 +413,7 @@ def calculate_population_change(df):
 col = st.columns((0.8,1,1.2), gap='small')
 with col[0]:
     st.subheader('Total Age Distribution')
-    colors = {2011: 'blue', 2022: 'red'}
+    colors = {2011: COUNTRY_COLORS['NORTHERN IRELAND'][-1], 2022: COUNTRY_COLORS['SCOTLAND'][-1]}
 
     # Prepare data for each year
     data_2011 = pie_df[pie_df['year'] == 2011].groupby('age')['population'].sum().reset_index()
@@ -442,7 +444,7 @@ with col[0]:
         xaxis_title="Age",
         yaxis=dict(
             title='Total Population',
-            range=[min_population, max_population+50000]
+            range=[min_population-20000, max_population+30000]
     ),
     )
 
@@ -451,8 +453,9 @@ with col[1]:
     st.plotly_chart(plot_animated_population_pie_chart(pie_df), use_container_width=True)
 
 with col[2]:
+    st.subheader('Sex Distribution')
     st.plotly_chart(plot_animated_population_by_sex(pie_df), use_container_width=True)
-    #st.plotly_chart(plot_population_by_sex(pie_df), use_container_width=True)
+    
 
 
 @st.cache_data
@@ -673,11 +676,13 @@ fig.update_layout(
 with col2:
     st.plotly_chart(fig, use_container_width=True, height=1800)
 
+st.divider()
 st.subheader('Insights')
 st.write(f"""
     * Total Population increased on {Total_delta:.2f}%.
-    * Population in each region decreased by 2022, except England.
-    * The highest populations are in the 29-32 age range.
+    * Population in each country decreased by 2022, except England.
+    * In 2022, the highest populations are in the 28-35 age range.
+    * In 2011, the population had spikes every 3 years between 20 and 29 age range.
     """)
 
-st.divider()
+
