@@ -1,81 +1,70 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 
 import geopandas as gpd
 import plotly.graph_objects as go
-from streamlit_extras.metric_cards import style_metric_cards
 import streamlit.components.v1 as components
-from streamlit_extras.stylable_container import stylable_container
+from streamlit_extras.add_vertical_space import add_vertical_space
 
 COUNTRY_COLORS = {
-    "ENGLAND": ["#ffffff", "#fff7f0", "#ffefdf", "#ffe7cf", "#ffdfbe", "#ffd6a5", "#ffcd83", "#ffc461", "#ffbc3f", "#ffb31e"],
-    "NORTHERN IRELAND": ["#ffffff", "#f2ffe7", "#e4ffcf", "#d7ffb6", "#caff9e", "#bdf685", "#afe06d", "#a2cb55", "#95b63c", "#87a124"],
-    "SCOTLAND": ["#ffffff", "#ffe6e6", "#ffcccc", "#ffb3b3", "#ff9999", "#ff8080", "#ff6666", "#ff4d4d", "#ff3333", "#ff1a1a"],
-    "WALES": ["#ffffff", "#ffffeb", "#ffffd6", "#ffffc2", "#fffdad", "#fffa99", "#fff785", "#fff471", "#fff05d", "#ffec49"]
+    "ENGLAND": ["#ffffff", "#fff7f0", "#ffefdf", "#ffe7cf", "#ffdfbe", "#ffd6a5", "#ffcd83", "#ffc461", "#ffbc3f",
+                "#ffb31e"],
+    "NORTHERN IRELAND": ["#ffffff", "#f2ffe7", "#e4ffcf", "#d7ffb6", "#caff9e", "#bdf685", "#afe06d", "#a2cb55",
+                         "#95b63c", "#87a124"],
+    "SCOTLAND": ["#ffffff", "#ffe6e6", "#ffcccc", "#ffb3b3", "#ff9999", "#ff8080", "#ff6666", "#ff4d4d", "#ff3333",
+                 "#ff1a1a"],
+    "WALES": ["#ffffff", "#ffffeb", "#ffffd6", "#ffffc2", "#fffdad", "#fffa99", "#fff785", "#fff471", "#fff05d",
+              "#ffec49"]
 }
-
 
 APP_TITLE = 'UK Young Adults Demographics: A Decade in Data '
 APP_SUB_TITLE = ''
 st.set_page_config(page_title=APP_TITLE, layout="wide", initial_sidebar_state="collapsed")
 st.write("#")
+st.markdown("""
+        <style>
+               .block-container {
+                    padding-top: 1rem;
+                    padding-bottom: 0rem;
+                    padding-left: 5rem;
+                    padding-right: 5rem;
+                }
+        </style>
+        """, unsafe_allow_html=True)
 
 
-
-# First SCREEN
-
+# ===============================
+# Functions
+# ===============================
 @st.cache_data
 def scroll_to_basic_charts():
-    js = '''
+    components.html('''
     <script>
         var element = window.parent.document.querySelector("#basic-charts");
         if (element) {
             element.scrollIntoView({behavior: 'smooth'});
         }
     </script>
-    '''
-    #st.write(js, unsafe_allow_html=True)
-    components.html(js)
+    ''')
 
 
-st.markdown(f"<h1 style='text-align: center; color: black;'>{APP_TITLE}</h2>",
-    unsafe_allow_html=True)
-
-#st.title(APP_TITLE)
-st.caption(APP_SUB_TITLE)
-
-__, __, col5, __, __ = st.columns(5)
-with col5:
-    st.markdown('This code will be printed.')
-
-    #m = st.markdown("""<style>div.stButton > button:first-child {background-color:#8C83D1; font-style: italic;}</style>""", unsafe_allow_html=True) #background-color: #0099ff;
-    # Button to scroll to the "Basic charts" section
-    st.button("Explore the dashboard", on_click=scroll_to_basic_charts, type="primary")
-
-st.divider()
-st.image('jonny-unsplash.png', caption='Photo by Jonny Gios on Unsplash.',
-            use_column_width="always")
-
-# Second SCREEN
-st.markdown("<h2> </h2><h2> </h2><h2 style='text-align: center;'>Basic charts</h2>", unsafe_allow_html=True)
-
-
-
-# Function to pivot data by year, with suffix
 @st.cache_data
 def process_population_data(df):
     def pivot_data(df, year, suffix):
         df_year = df[df['year'] == year]
         total_population = df_year.pivot_table(index='area_name', values='population', aggfunc='sum')
-        
-        population = df_year.pivot_table(index='area_name', values='population', aggfunc='sum').rename(columns={'population': f'population_{suffix}'})
-        
-        sex = df_year.pivot_table(index='area_name', values='population', columns='sex', aggfunc='sum').div(total_population['population'], axis=0) * 100
+
+        population = df_year.pivot_table(index='area_name', values='population', aggfunc='sum').rename(
+            columns={'population': f'population_{suffix}'})
+
+        sex = df_year.pivot_table(index='area_name', values='population', columns='sex', aggfunc='sum').div(
+            total_population['population'], axis=0) * 100
         sex.columns = [f"{col}_{suffix}" for col in sex.columns]
-        age_sex = df_year.pivot_table(index='area_name', values='population', columns='age_sex', aggfunc='sum').div(total_population['population'], axis=0) * 100
+        age_sex = df_year.pivot_table(index='area_name', values='population', columns='age_sex', aggfunc='sum').div(
+            total_population['population'], axis=0) * 100
         age_sex.columns = [f"{col}_{suffix}" for col in age_sex.columns]
-        age_year = df_year.pivot_table(index='area_name', values='population', columns='age_year', aggfunc='sum').div(total_population['population'], axis=0) * 100
+        age_year = df_year.pivot_table(index='area_name', values='population', columns='age_year', aggfunc='sum').div(
+            total_population['population'], axis=0) * 100
         #age_year.columns = [f"{col}_{suffix}" for col in age_year.columns]
         return population, sex, age_sex, age_year
 
@@ -88,24 +77,21 @@ def process_population_data(df):
     pop_2011, sex_2011, age_sex_2011, age_year_2011 = pivot_data(df_copy, 2011, '2011')
     pop_2022, sex_2022, age_sex_2022, age_year_2022 = pivot_data(df_copy, 2022, '2022')
 
-    result_df = pd.concat([pop_2011, pop_2022, sex_2011, sex_2022, age_sex_2011, age_sex_2022, age_year_2011, age_year_2022], axis=1).reset_index()
+    result_df = pd.concat(
+        [pop_2011, pop_2022, sex_2011, sex_2022, age_sex_2011, age_sex_2022, age_year_2011, age_year_2022],
+        axis=1).reset_index()
 
     return result_df
 
-# Load and process the data
+
 @st.cache_data
 def load_data():
-
     gh_folder = '/Users/jts/Documents/college/git-hub/dv-streamlit/'
     pie_df = pd.read_csv(gh_folder + 'pie_data.csv')
-    # DELETE
-    pie_df.rename(columns={'Year': 'year', 'Population': 'population'}, inplace=True)
-
     # prepare data for map
     new_df_copy = pie_df.copy()
     new_df_copy.rename(columns={'year': 'year', 'population': 'population'}, inplace=True)
     result_df = process_population_data(new_df_copy)
-
 
     #st.write(result_df.columns)
     # load gjson
@@ -113,14 +99,13 @@ def load_data():
         gdf = gpd.read_file(f)
 
     concatenated_df = pd.concat([gdf, result_df], axis=1)
-    concatenated_df = concatenated_df.loc[:,~concatenated_df.columns.duplicated()].copy()
+    concatenated_df = concatenated_df.loc[:, ~concatenated_df.columns.duplicated()].copy()
 
     # Convert the concatenated DataFrame to a GeoDataFrame
     gdf_choro = gpd.GeoDataFrame(concatenated_df, geometry=gdf.geometry)
 
     return pie_df, gdf_choro
 
-pie_df, gdf_choro = load_data()
 
 @st.cache_data
 def plot_animated_population_pie_chart(df):
@@ -151,7 +136,8 @@ def plot_animated_population_pie_chart(df):
             data=[go.Pie(
                 labels=df_grouped[df_grouped['year'] == year]['name'],
                 values=df_grouped[df_grouped['year'] == year]['population'],
-                marker=dict(colors=[COUNTRY_COLORS[country][5] for country in df_grouped[df_grouped['year'] == year]['name']])
+                marker=dict(
+                    colors=[COUNTRY_COLORS[country][5] for country in df_grouped[df_grouped['year'] == year]['name']])
             )],
             name=str(year)
         )
@@ -181,22 +167,26 @@ def plot_animated_population_pie_chart(df):
             },
             'transition': {'duration': 300, 'easing': 'cubic-in-out'},
             'pad': {'b': 10, 't': 50},
-            'len': 0.9,
-            'x': 0.1,
+            'len': 0.3,
+            'x': 0,
             'y': 0,
             'steps': [{
-                'args': [[year], {'frame': {'duration': 300, 'redraw': True}, 'mode': 'immediate', 'transition': {'duration': 300}}],
+                'args': [[year], {'frame': {'duration': 300, 'redraw': True}, 'mode': 'immediate',
+                                  'transition': {'duration': 300}}],
                 'label': str(year),
                 'method': 'animate'
             } for year in years]
         }]
     )
-    st.subheader('Population Dynamics')
     fig.update_layout(showlegend=True,
-        legend=dict(title='', traceorder='normal', orientation='h'))
+                      legend=dict(title='', traceorder='normal', orientation='h'),
+                      margin=dict(t=0, b=0, r=100),  #height=400
+                      plot_bgcolor='white',
+                      )
 
     #fig.show()
     return fig
+
 
 @st.cache_data
 def plot_population_by_sex(df):
@@ -210,7 +200,7 @@ def plot_population_by_sex(df):
     # Separate the data for males and females
     males = grouped[grouped['sex'] == 'M']
     females = grouped[grouped['sex'] == 'F']
-    
+
     fig = go.Figure()
     # Add male bars
     for i, row in males.iterrows():
@@ -231,7 +221,6 @@ def plot_population_by_sex(df):
             #text=f'{sex}: {row["population"]:.1f}% of {country_name}'
         ))
 
-    
     # Add female bars
     for i, row in females.iterrows():
         country_name = row['name']
@@ -247,7 +236,7 @@ def plot_population_by_sex(df):
             marker=dict(color=color),
             hoverinfo='text',
             hovertext=f'{country_name}<br>{sex}: {row["population"]:.1f}%',
-            hoverlabel={"bgcolor":'white'},
+            hoverlabel={"bgcolor": 'white'},
             showlegend=False,
         ))
     # Set the title and labels
@@ -257,21 +246,23 @@ def plot_population_by_sex(df):
         yaxis_title='',
         #barmode='stack',
         showlegend=False,
+        margin=dict(t=0, b=0), height=200,
         #legend=dict(title='', traceorder='normal', orientation='v'),
-        )
+    )
     #fig.show()
     return fig
+
 
 @st.cache_data
 def plot_animated_population_by_sex(df):
     # Aggregate the population by country, sex, and year
     df_grouped = df.groupby(['year', 'name', 'sex'])['population'].sum().reset_index()
-    
+
     total_population = df_grouped.groupby(['year', 'name'])['population'].transform('sum')
     # Normalize the population values so that M + F = 100% for each county
-    
+
     df_grouped['population'] = (df_grouped['population'] / total_population) * 100
-    
+
     # Get unique years
     years = df_grouped['year'].unique()
 
@@ -281,11 +272,11 @@ def plot_animated_population_by_sex(df):
     # Add traces, one for each frame (initial year)
     initial_year = years[0]
     df_year = df_grouped[df_grouped['year'] == initial_year]
-    
+
     # Separate the data for males and females for the initial year
     males = df_year[df_year['sex'] == 'M']
     females = df_year[df_year['sex'] == 'F']
-    
+
     for i, row in males.iterrows():
         country_name = row['name']
         sex = 'Male'
@@ -305,7 +296,7 @@ def plot_animated_population_by_sex(df):
     for i, row in females.iterrows():
         country_name = row['name']
         sex = 'Female'
-        color = COUNTRY_COLORS[country_name][8]
+        color = COUNTRY_COLORS[country_name][7]
         fig.add_trace(go.Bar(
             x=[row['population']],
             y=[row['name']],
@@ -324,7 +315,7 @@ def plot_animated_population_by_sex(df):
         df_year = df_grouped[df_grouped['year'] == year]
         males = df_year[df_year['sex'] == 'M']
         females = df_year[df_year['sex'] == 'F']
-        
+
         frame_data = []
         for i, row in males.iterrows():
             country_name = row['name']
@@ -340,7 +331,7 @@ def plot_animated_population_by_sex(df):
                 width=0.7,
                 hovertext=f'{country_name}<br>{sex}: {row["population"]:.1f}%',
             ))
-        
+
         for i, row in females.iterrows():
             country_name = row['name']
             sex = 'Female'
@@ -362,7 +353,7 @@ def plot_animated_population_by_sex(df):
     fig.update_layout(
         updatemenus=[{
             'direction': 'left',
-            'pad': {'r': 10, 't': 87},
+            'pad': {'r': 10, 't': 10},
             'showactive': False,
             'type': 'buttons',
             'x': 0.1,
@@ -381,81 +372,39 @@ def plot_animated_population_by_sex(df):
                 'xanchor': 'right'
             },
             'transition': {'duration': 300, 'easing': 'cubic-in-out'},
-            'pad': {'b': 10, 't': 50},
-            'len': 0.9,
-            'x': 0.1,
+            'pad': {'b': 10, 't': 20},
+            'len': 0.201,
+            'x': 0.01,
             'y': 0,
             'steps': [{
-                'args': [[year], {'frame': {'duration': 300, 'redraw': True}, 'mode': 'immediate', 'transition': {'duration': 300}}],
+                'args': [[year], {'frame': {'duration': 300, 'redraw': True}, 'mode': 'immediate',
+                                  'transition': {'duration': 300}}],
                 'label': str(year),
                 'method': 'animate'
             } for year in years]
         }]
     )
     fig.update_layout(
+        dragmode='pan',
         xaxis_title='Population (%)',
         yaxis_title='',
         legend=dict(title='', traceorder='normal', orientation='v'),
-        showlegend=False
-    )
+        showlegend=False,
+        margin=dict(t=0, b=0), height=260,
+        #legend=dict(title='', traceorder='normal', orientation='v'),
+        plot_bgcolor='white',
 
+    )
     return fig
+
 
 @st.cache_data
 def calculate_population_change(df):
     df_2011, df_2022 = df[df['year'] == 2011], df[df['year'] == 2022]
-    pop_2011, pop_2022 = df_2011.groupby('name')['population'].sum().reset_index()['population'].sum(), df_2022.groupby('name')['population'].sum().reset_index()['population'].sum()
+    pop_2011, pop_2022 = df_2011.groupby('name')['population'].sum().reset_index()['population'].sum(), \
+        df_2022.groupby('name')['population'].sum().reset_index()['population'].sum()
     delta = (pop_2022 - pop_2011) / pop_2011 * 100
     return pop_2022, delta
-
-
-
-col = st.columns((0.8,1,1.2), gap='small')
-with col[0]:
-    st.subheader('Total Age Distribution')
-    colors = {2011: COUNTRY_COLORS['NORTHERN IRELAND'][-1], 2022: COUNTRY_COLORS['SCOTLAND'][-1]}
-
-    # Prepare data for each year
-    data_2011 = pie_df[pie_df['year'] == 2011].groupby('age')['population'].sum().reset_index()
-    data_2022 = pie_df[pie_df['year'] == 2022].groupby('age')['population'].sum().reset_index()
-    min_population = min(data_2011['population'].min(), data_2022['population'].min())
-    max_population = max(data_2011['population'].max(), data_2022['population'].max())
-
-    # Create initial figure with data from 2011
-    fig = go.Figure()
-
-    hov_temp = 'Age: %{x}<br>Population: %{y}<extra></extra>'
-    # Add 2011 data
-    fig.add_trace(go.Scatter(x=data_2011['age'],y=data_2011['population'], 
-                    mode='lines+markers', name='2011', line=dict(color=colors[2011]),
-                    hovertemplate='2011<br>'+hov_temp))
-
-    # Add 2022 data
-    fig.add_trace(go.Scatter(x=data_2022['age'], y=data_2022['population'],
-        mode='lines+markers', name='2022', visible=True, line=dict(color=colors[2022]),
-        hovertemplate='2022<br>'+hov_temp))
-
-    # Define buttons for switching between years
-    
-
-    # Update layout with buttons
-    fig.update_layout(
-        #updatemenus=[dict(type="buttons", buttons=buttons_years, x=.99, y=1.15)],
-        xaxis_title="Age",
-        yaxis=dict(
-            title='Total Population',
-            range=[min_population-20000, max_population+30000]
-    ),
-    )
-
-    st.plotly_chart(fig, use_container_width=True, height=400)
-with col[1]:
-    st.plotly_chart(plot_animated_population_pie_chart(pie_df), use_container_width=True)
-
-with col[2]:
-    st.subheader('Sex Distribution')
-    st.plotly_chart(plot_animated_population_by_sex(pie_df), use_container_width=True)
-    
 
 
 @st.cache_data
@@ -477,41 +426,35 @@ def calculate_sex_ratio(df):
     delta = ratio_2022 - ratio_2011
     return ratio_2022, delta
 
-__, Total_delta = calculate_population_change(pie_df)
 
 @st.cache_data
 def metrics():
-        col_1, col_2 = st.columns(2)
-        pop, d_pop = calculate_population_change(pie_df)
-        d_pop = round(d_pop, 2)
+    col_1, col_2 = st.columns(2)
+    pop, d_pop = calculate_population_change(pie_df)
+    d_pop = round(d_pop, 2)
 
-        col_1.metric(label="Population", value="{:,}".format(pop), delta=f'{d_pop}%')
+    col_1.metric(label="Total Population", value="{:,}".format(pop), delta=f'{d_pop}%')
 
-        #col2 = st.columns(1)[0]
-        sex_ratio, sex_del = calculate_sex_ratio(pie_df)
-        sex_del = round(sex_del, 2)
-        col_2.metric(label="Male/Female Ratio", value=sex_ratio, delta=sex_del)
-        #style_metric_cards(border_left_color="#8C83D1") #0074D9
+    #col2 = st.columns(1)[0]
+    sex_ratio, sex_del = calculate_sex_ratio(pie_df)
+    sex_del = round(sex_del, 2)
+    col_2.metric(label="Human sex ratio", value=sex_ratio, delta=sex_del)
 
-# with col[2]:
-    
 
-st.markdown("<h2> </h2>", unsafe_allow_html=True)
-
-#st.divider()
-# Function to get population for a specific year
 @st.cache_data
 def get_population(df, year):
     pop_data = df[df['year'] == year]
     return pop_data['population'].sum() if not pop_data.empty else 0
 
+
 @st.cache_data
 def gender_gap(df):
     gender_gap = df.groupby(['name', 'age', 'sex'])['population'].sum().unstack()
-    gender_gap['Gender Gap'] = abs((gender_gap['M'] - gender_gap['F'])/gender_gap['M']*100)
+    gender_gap['Gender Gap'] = abs((gender_gap['M'] - gender_gap['F']) / gender_gap['M'] * 100)
 
     # Find the maximum gender gap for each region
-    max_gender_gap = gender_gap['Gender Gap'].groupby('name').idxmax().apply(lambda x: (x[1], gender_gap.loc[x, 'Gender Gap']))
+    max_gender_gap = gender_gap['Gender Gap'].groupby('name').idxmax().apply(
+        lambda x: (x[1], gender_gap.loc[x, 'Gender Gap']))
 
     # Convert to a DataFrame for better readability
     max_gender_gap_df = pd.DataFrame(list(max_gender_gap.items()), columns=['Country', 'Age and Gap'])
@@ -522,11 +465,56 @@ def gender_gap(df):
     return max_gender_gap_df
 
 
-col, col1, col2, col3 = st.columns([1,1,1.2,0.8])
+@st.cache_data
+def get_column_name(year, gender, age=None):
+    if gender == "Both":
+        if age:
+            return f'{age}_{year}'
+        else:
+            return f'population_{year}'
+    else:
+        if age:
+            return f'{age}_{gender}_{year}'
+        return f'{gender}_{year}'
+
+
+# ===============================
+# First SCREEN
+# ===============================
+st.markdown(f"<h1 style='text-align: center; color: black;'>{APP_TITLE}</h2>",
+            unsafe_allow_html=True)
+
+st.caption(APP_SUB_TITLE)
+
+__, __, col5, __, __ = st.columns(5)
+with col5:
+    st.markdown('This code will be printed.')
+    # Button to scroll to the "Basic charts" section
+    st.button("Explore the dashboard", on_click=scroll_to_basic_charts, type="primary")
+
+st.divider()
+st.image('jonny-unsplash.png', caption='Photo by Jonny Gios on Unsplash.',
+         use_column_width="always")
+
+# ===============================
+# Second SCREEN
+# ===============================
+st.markdown("<h2> </h2><h2> </h2><h2 style='text-align: center;'>Basic charts</h2>", unsafe_allow_html=True)
+# Load and process the data
+pie_df, gdf_choro = load_data()
+
+# 3 main visualizations
+__, Total_delta = calculate_population_change(pie_df)
+
+#st.markdown("<h2> </h2>", unsafe_allow_html=True)  # gap
+
+col, col1, col2 = st.columns([0.7, 1, 1], gap='large')
 # Dropdown to select country
 countries = gdf_choro['area_name'].unique()
 
-with col1:
+with col:
+    st.markdown("<h3>Metrics</h3>", unsafe_allow_html=True)
+    metrics()
     st.subheader('Dynamics in numbers')
     metric_place = st.empty()
     selected_country = st.selectbox('', countries)
@@ -536,54 +524,93 @@ with col1:
     pop_2011 = get_population(df_filtered, 2011)
     #st.metric(label=f'{selected_country} in 2011', value=f"{pop_2011:,}", delta=0, delta_color='off')
     pop_2022 = get_population(df_filtered, 2022)
-    metric_place.metric(label=f'{selected_country} in 2022', value=f"{pop_2022:,}", delta=f"{int(pop_2022-pop_2011):,}")
+    metric_place.metric(label=f'{selected_country} in 2022', value=f"{pop_2022:,}",
+                        delta=f"{int(pop_2022 - pop_2011):,}")
 
+with col1:
+    st.subheader('Population Dynamics')
+    st.plotly_chart(plot_animated_population_pie_chart(pie_df), use_container_width=True)
 
-with col:
-    st.subheader('Biggest Gender Gaps by Age')
-    #st.write('max_gender_gap_df')
-    gender_gap_df = gender_gap(pie_df)
-    st.dataframe(gender_gap_df,
-                 #column_order=("states", "population"),
-                 hide_index=True,
-                 width=None,
-                 column_config={
-                 "Age": st.column_config.NumberColumn(
-                    help="""Age group with biggest **Gender Gap**.""",),
-                    "Gender Gap, %": st.column_config.ProgressColumn(
-                        "Gender Gap, %",
-                        help="""Normalized Difference between **Males** and **Females** in indicated *Age*.""",
-                        format="%.2f",
-                        min_value=0,
-                        max_value=max(gender_gap_df['Gender Gap, %']),
-                     )}
-                 )
-
-
-######################
 with col2:
-    st.markdown("<h3 style='text-align: center; margin-left:-70px;'>Metrics</h3>", unsafe_allow_html=True)
-    #st.subheader('Metrics')
-    metrics()
-with col3:
-    with st.expander('About', expanded=False):
-        st.write('''
-            - **Data**: The National Archives under [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
-            - **Population**: Total population of the targeted age group in 2022.
-            - **Male/Female Ratio**: Ratio of males to females in the targeted age group.
-            ''')
-    #pass
-    
+    st.subheader('Age Distribution')
+    colors = {2011: COUNTRY_COLORS['NORTHERN IRELAND'][-1], 2022: COUNTRY_COLORS['SCOTLAND'][-1]}
 
+    # Prepare data for each year
+    data_2011 = pie_df[pie_df['year'] == 2011].groupby('age')['population'].sum().reset_index()
+    data_2022 = pie_df[pie_df['year'] == 2022].groupby('age')['population'].sum().reset_index()
+    min_population = min(data_2011['population'].min(), data_2022['population'].min())
+    max_population = max(data_2011['population'].max(), data_2022['population'].max())
+
+    # Create initial figure with data from 2011
+    fig = go.Figure()
+
+    hov_temp = 'Age: %{x}<br>Population: %{y}<extra></extra>'
+    # Add 2011 data
+    fig.add_trace(go.Scatter(x=data_2011['age'], y=data_2011['population'],
+                             mode='lines+markers', name='2011', line=dict(color=colors[2011]),
+                             hovertemplate='2011<br>' + hov_temp))
+
+    # Add 2022 data
+    fig.add_trace(go.Scatter(x=data_2022['age'], y=data_2022['population'],
+                             mode='lines+markers', name='2022', visible=True, line=dict(color=colors[2022]),
+                             hovertemplate='2022<br>' + hov_temp))
+
+    # Define buttons for switching between years
+
+    # Update layout with buttons
+    fig.update_layout(
+        xaxis_title="Age",
+        yaxis=dict(
+            title='Total Population',
+            range=[min_population - 20000, max_population + 30000],
+        ),
+        #paper_bgcolor='rgba(0, 0, 0, 0)',
+        plot_bgcolor='white',
+        margin={"r": 10, "t": 0, "l": 0, "b": 0},
+        #height=400,
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+col = st.columns((0.5, 1,), gap='small')
+with col[0]:
+    st.subheader('The Biggest Gender Gaps by Age')
+    gender_gap_df = gender_gap(pie_df)
+    gender_gap_df = st.data_editor(gender_gap_df, hide_index=True,
+                                   column_config={
+                                       "Age": {"alignment": "left"},
+                                       "Gender Gap, %": st.column_config.ProgressColumn(
+                                           "Gender Gap, %",
+                                           help="""Normalized Difference between **Males** and **Females** in indicated *Age*.""",
+                                           format="%.2f",
+                                           min_value=0,
+                                           max_value=max(gender_gap_df['Gender Gap, %']),
+                                       )}, disabled=True)
+    col_t = st.columns((2, 1,), gap='small')
+    with col_t[0]:
+        with st.expander('About', expanded=False):
+            st.write('''
+                - **Data**: The National Archives under [Open Government Licence](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
+                - **Population**: Total population of the targeted age group in 2022.
+                - **Human sex ratio**: Ratio of males to females in the targeted age group.
+                ''')
+with col[1]:
+    st.subheader('Sex Distribution')
+    config = {'modeBarButtonsToRemove': ['toImage', 'sendDataToCloud', "zoom", "select",
+                                         "lasso", "drawclosedpath", "drawopenpath", "drawline",
+                                         "drawrect", "drawcircle", "orbit", "turntable"], }
+    st.plotly_chart(plot_animated_population_by_sex(pie_df), use_container_width=True, config=config)
+
+# make a gap
 st.markdown("<h2> </h2><h2> </h2><h2> </h2><h2> </h2><h2> </h2>", unsafe_allow_html=True)
 
-#################################
+# ===============================
 # Third SCREEN
+# ===============================
 st.markdown("<h2 style='text-align: center; color: black;'>Population Density by Geographic Location</h2>",
-    unsafe_allow_html=True)
+            unsafe_allow_html=True)
 
 # Side filters
-col1, col2 = st.columns([1,5])
+col1, col2 = st.columns([1, 5])
 with col1:
     st.subheader("Filters")
     year = st.selectbox("Select year", [2011, 2022])
@@ -621,26 +648,10 @@ with col1:
 
     #st.markdown('To interact with map, please, use fiters above.')
 
-
 # Create the initial figure
 fig = go.Figure()
-
-# Add trace based on the selection
-@st.cache_data
-def get_column_name(year, gender, age=None):
-    if gender == "Both":
-        if age:
-            return f'{age}_{year}'
-        else:
-            return f'population_{year}'
-    else:
-        if age:
-            return f'{age}_{gender}_{year}'
-        return f'{gender}_{year}'
-
 column_name = get_column_name(year, gender, age)
 z_data = gdf_choro[column_name]
-
 
 if gender == "Both" and age:
     hovertemplate = f'<b>%{{customdata[0]}}</b><br>%{{z:.2f}}% of people aged {age} in {year}<extra></extra>'
@@ -655,7 +666,7 @@ fig.add_trace(go.Choroplethmapbox(
     geojson=gdf_choro.__geo_interface__,
     locations=gdf_choro.index,
     z=z_data,
-    colorscale= 'Cividis',# "Viridis",
+    colorscale='Cividis',  # "Viridis",
     marker_opacity=0.5,
     marker_line_width=0,
     hovertemplate=hovertemplate,
@@ -667,14 +678,15 @@ fig.update_layout(
     mapbox=dict(
         style="carto-positron",
         center={"lat": 54.5, "lon": -3.4},
-        zoom=4
+        zoom=4.5
     ),
-    margin={"r": 0, "t": 0, "l": 0, "b": 0},
-    )
+    margin={"r": 10, "t": 0, "l": 0, "b": 0},
+    height=500,
+)
 
 # show the map
 with col2:
-    st.plotly_chart(fig, use_container_width=True, height=1800)
+    st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
 st.subheader('Insights')
@@ -684,5 +696,4 @@ st.write(f"""
     * In 2022, the highest populations are in the 28-35 age range.
     * In 2011, the population had spikes every 3 years between 20 and 29 age range.
     """)
-
-
+add_vertical_space(10)
