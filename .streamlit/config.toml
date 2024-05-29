@@ -2,3 +2,4 @@
 maxMessageSize = 1024
 [theme]
 backgroundColor="#FAF9F6"
+primaryColor="#8C83D1"
