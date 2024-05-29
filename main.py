@@ -530,7 +530,7 @@ with col[1]:
 st.markdown("<h2> </h2><h2> </h2><h2> </h2><h2> </h2><h2> </h2>", unsafe_allow_html=True)
 
 # ===============================
-# Third SCREEN
+# Third SCREEN Map
 # ===============================
 st.markdown("<h2 style='text-align: center; color: black;'>Population Density by Geographic Location</h2>",
             unsafe_allow_html=True)
